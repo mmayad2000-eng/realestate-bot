@@ -4,7 +4,6 @@ services:
     runtime: python
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2
-    plan: free
     branch: main
     envVars:
       - key: FB_VERIFY_TOKEN
