@@ -27,7 +27,7 @@ COMPANY_NAME = "شركتنا للعقارات"
 CITY = "طنطا"
 
 # ===== مسار حفظ بيانات العملاء =====
-LEADS_FILE = "leads.json"
+LEADS_FILE = os.path.join(os.getenv("TMPDIR", "/tmp"), "leads.json")
 
 # ===== إعدادات الخادم =====
 PORT = int(os.getenv("PORT", 5000))
