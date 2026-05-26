@@ -35,7 +35,7 @@ def _save_processed(ids: set):
 
 def get_page_posts(limit=10):
     """اجلب آخر بوستات الصفحة"""
-    url = f"https://graph.facebook.com/v19.0/me/feed"
+    url = "https://graph.facebook.com/v19.0/me/feed"
     params = {
         "access_token": config.FB_PAGE_ACCESS_TOKEN,
         "fields": "id,message,created_time",
@@ -44,6 +44,9 @@ def get_page_posts(limit=10):
     try:
         r = requests.get(url, params=params, timeout=10)
         data = r.json()
+        if "error" in data:
+            logger.error(f"[PageMonitor] FB API error: {data['error']}")
+            return []
         return data.get("data", [])
     except Exception as e:
         logger.error(f"[PageMonitor] Error fetching posts: {e}")
@@ -61,6 +64,9 @@ def get_post_comments(post_id, limit=25):
     try:
         r = requests.get(url, params=params, timeout=10)
         data = r.json()
+        if "error" in data:
+            logger.error(f"[PageMonitor] FB API error for {post_id}: {data['error']}")
+            return []
         return data.get("data", [])
     except Exception as e:
         logger.error(f"[PageMonitor] Error fetching comments for {post_id}: {e}")
@@ -77,6 +83,7 @@ def reply_to_comment(comment_id, message):
         if r.status_code == 200:
             logger.info(f"[PageMonitor] Replied to comment {comment_id}")
             return True
+        logger.warning(f"[PageMonitor] Reply failed ({r.status_code}): {r.text[:100]}")
     except Exception as e:
         logger.error(f"[PageMonitor] Error replying to {comment_id}: {e}")
     return False
@@ -87,11 +94,22 @@ def scan_page_comments():
     الدالة الرئيسية — تفحص كل تعليقات الصفحة وترد على العملاء المهتمين
     بتُستدعى من /cron/page كل ساعة
     """
+    if not config.FB_PAGE_ACCESS_TOKEN:
+        return {"error": "FB_PAGE_ACCESS_TOKEN غير مضبوط", "new_leads": 0}
+
     processed = _load_processed()
     new_leads = 0
+    fb_errors = []
 
     posts = get_page_posts(limit=5)
     logger.info(f"[PageMonitor] Scanning {len(posts)} posts...")
+
+    if not posts:
+        return {
+            "processed": len(processed),
+            "new_leads": 0,
+            "note": "لا يوجد بوستات أو خطأ في الاتصال بالفيسبوك"
+        }
 
     for post in posts:
         post_id = post["id"]
@@ -133,24 +151,48 @@ def scan_page_comments():
 
     _save_processed(processed)
     logger.info(f"[PageMonitor] Done. New leads from comments: {new_leads}")
-    return {"processed": len(processed), "new_leads": new_leads}
+    return {
+        "processed": len(processed),
+        "new_leads": new_leads,
+        "posts_scanned": len(posts)
+    }
 
 
 def subscribe_page_to_webhooks():
     """
     اشترك في أحداث الصفحة (يُنفَّذ مرة واحدة)
     GET /setup/subscribe لتفعيله
+
+    ملاحظة: "feed" يتطلب pages_manage_metadata.
+    الكومنتات تُعالج بـ polling كل ساعة عبر /cron/page
     """
-    url = f"https://graph.facebook.com/v19.0/me/subscribed_apps"
-    params = {
+    url = "https://graph.facebook.com/v19.0/me/subscribed_apps"
+    results = {}
+
+    # المحاولة ١: messages + messaging_postbacks (لا تحتاج pages_manage_metadata)
+    params1 = {
         "access_token": config.FB_PAGE_ACCESS_TOKEN,
-        "subscribed_fields": "feed,messages,messaging_postbacks",
+        "subscribed_fields": "messages,messaging_postbacks,messaging_optins",
     }
     try:
-        r = requests.post(url, params=params, timeout=10)
-        result = r.json()
-        logger.info(f"[PageMonitor] Subscribe result: {result}")
-        return result
+        r1 = requests.post(url, params=params1, timeout=10)
+        results["messages"] = r1.json()
+        logger.info(f"[PageMonitor] Subscribe (messages): {results['messages']}")
     except Exception as e:
-        logger.error(f"[PageMonitor] Subscribe error: {e}")
-        return {"error": str(e)}
+        results["messages"] = {"error": str(e)}
+
+    # المحاولة ٢: feed (قد تحتاج pages_manage_metadata)
+    params2 = {
+        "access_token": config.FB_PAGE_ACCESS_TOKEN,
+        "subscribed_fields": "feed",
+    }
+    try:
+        r2 = requests.post(url, params=params2, timeout=10)
+        results["feed"] = r2.json()
+        logger.info(f"[PageMonitor] Subscribe (feed): {results['feed']}")
+    except Exception as e:
+        results["feed"] = {"error": str(e)}
+
+    results["polling_active"] = True
+    results["note"] = "الكومنتات تُراقَب كل ساعة عبر /cron/page حتى لو feed subscription فشلت"
+    return results
