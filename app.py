@@ -251,3 +251,87 @@ def add_group_lead():
         source_group=data.get("source", "جروب"),
     )
     return jsonify(result), 200
+
+
+# ============================================================
+# ٧. صفحة سياسة الخصوصية (مطلوبة لـ Facebook App)
+# ============================================================
+
+@app.route("/privacy", methods=["GET"])
+def privacy_policy():
+    """سياسة الخصوصية — مطلوبة لإعداد تطبيق الفيسبوك"""
+    html = """<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>سياسة الخصوصية — E-Solution</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto;
+           padding: 0 20px; line-height: 1.8; color: #333; background: #f9f9f9; }
+    h1 { color: #1F4E79; border-bottom: 2px solid #1F4E79; padding-bottom: 10px; }
+    h2 { color: #2E75B6; margin-top: 30px; }
+    .logo { font-size: 24px; font-weight: bold; color: #1F4E79; }
+    .date { color: #888; font-size: 14px; }
+    footer { margin-top: 50px; padding-top: 20px; border-top: 1px solid #ddd;
+             color: #888; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="logo">E-Solution للتطوير العقاري</div>
+  <h1>سياسة الخصوصية</h1>
+  <p class="date">آخر تحديث: مايو 2026</p>
+
+  <h2>١. مقدمة</h2>
+  <p>
+    نحن في <strong>E-Solution للتطوير العقاري</strong> نحترم خصوصيتك ونلتزم بحماية بياناتك الشخصية.
+    تشرح هذه السياسة كيفية جمع بياناتك واستخدامها عند تفاعلك مع البوت الآلي "سلمى" على فيسبوك ماسنجر.
+  </p>
+
+  <h2>٢. البيانات التي نجمعها</h2>
+  <p>عند تفاعلك مع البوت، قد نجمع:</p>
+  <ul>
+    <li>اسمك كما يظهر على حسابك في فيسبوك</li>
+    <li>رقم هاتفك (اختياري — فقط إذا قدّمته طوعاً)</li>
+    <li>متطلباتك العقارية (النوع، الميزانية، المنطقة، المساحة)</li>
+    <li>تاريخ ووقت التفاعل</li>
+  </ul>
+
+  <h2>٣. كيف نستخدم بياناتك</h2>
+  <ul>
+    <li>التواصل معك بخصوص العروض العقارية المناسبة</li>
+    <li>توجيه طلبك لأحد مسؤولي المبيعات المختصين</li>
+    <li>تحسين خدماتنا وتجربة التواصل</li>
+  </ul>
+
+  <h2>٤. مشاركة البيانات</h2>
+  <p>
+    لا نبيع بياناتك ولا نشاركها مع أطراف خارجية بغرض تجاري.
+    يتم مشاركة بياناتك فقط مع فريق المبيعات الداخلي في E-Solution لأغراض المتابعة.
+  </p>
+
+  <h2>٥. الاحتفاظ بالبيانات</h2>
+  <p>
+    نحتفظ ببياناتك لمدة لا تتجاوز 12 شهراً من آخر تفاعل، ثم يتم حذفها تلقائياً.
+  </p>
+
+  <h2>٦. حقوقك</h2>
+  <p>يحق لك في أي وقت:</p>
+  <ul>
+    <li>طلب الاطلاع على بياناتك المحفوظة</li>
+    <li>طلب تصحيح أو حذف بياناتك</li>
+    <li>إيقاف تلقّي الرسائل بإرسال كلمة "إيقاف"</li>
+  </ul>
+
+  <h2>٧. التواصل معنا</h2>
+  <p>
+    للاستفسار عن سياسة الخصوصية أو ممارسة حقوقك، تواصل معنا عبر:<br>
+    <strong>E-Solution للتطوير العقاري — طنطا، مصر</strong>
+  </p>
+
+  <footer>
+    © 2026 E-Solution للتطوير العقاري. جميع الحقوق محفوظة.
+  </footer>
+</body>
+</html>"""
+    return html, 200, {"Content-Type": "text/html; charset=utf-8"}
