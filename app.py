@@ -210,11 +210,6 @@ if __name__ == "__main__":
 @app.route("/cron/page", methods=["GET", "POST"])
 def cron_scan_page():
     """يُستدعى كل ساعة لفحص تعليقات جديدة على الصفحة"""
-    # حماية بسيطة بـ secret key
-    token = request.args.get("token", "") or request.headers.get("Authorization", "")
-    if config.FB_VERIFY_TOKEN and token not in (config.FB_VERIFY_TOKEN, f"Bearer {config.FB_VERIFY_TOKEN}"):
-        abort(403)
-
     from bot.page_monitor import scan_page_comments
     result = scan_page_comments()
     logger.info(f"[Cron] Page scan result: {result}")
