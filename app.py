@@ -201,3 +201,58 @@ def health():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=config.PORT, debug=config.DEBUG)
+
+
+# ============================================================
+# ٥. مراقبة تعليقات الصفحة (Cron Job)
+# ============================================================
+
+@app.route("/cron/page", methods=["GET", "POST"])
+def cron_scan_page():
+    """يُستدعى كل ساعة لفحص تعليقات جديدة على الصفحة"""
+    # حماية بسيطة بـ secret key
+    token = request.args.get("token", "") or request.headers.get("Authorization", "")
+    if config.FB_VERIFY_TOKEN and token not in (config.FB_VERIFY_TOKEN, f"Bearer {config.FB_VERIFY_TOKEN}"):
+        abort(403)
+
+    from bot.page_monitor import scan_page_comments
+    result = scan_page_comments()
+    logger.info(f"[Cron] Page scan result: {result}")
+    return jsonify(result), 200
+
+
+@app.route("/setup/subscribe", methods=["GET"])
+def setup_subscribe():
+    """اشترك في أحداث الصفحة — نفّذه مرة واحدة فقط"""
+    from bot.page_monitor import subscribe_page_to_webhooks
+    result = subscribe_page_to_webhooks()
+    return jsonify(result), 200
+
+
+# ============================================================
+# ٦. عملاء الجروبات
+# ============================================================
+
+@app.route("/leads/groups", methods=["GET"])
+def view_group_leads():
+    """اعرض عملاء الجروبات"""
+    from bot.group_leads import get_all_group_leads, format_group_leads_html
+    leads = get_all_group_leads()
+    leads.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+    return format_group_leads_html(leads)
+
+
+@app.route("/leads/groups/add", methods=["POST"])
+def add_group_lead():
+    """
+    أضف عميل من جروب يدوياً أو من سكريبت خارجي
+    JSON: { name, phone, post_text, source }
+    """
+    data = request.get_json(silent=True) or {}
+    from bot.group_leads import process_post
+    result = process_post(
+        post_text=data.get("post_text", ""),
+        author_name=data.get("name", "غير معروف"),
+        source_group=data.get("source", "جروب"),
+    )
+    return jsonify(result), 200
