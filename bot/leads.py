@@ -91,3 +91,15 @@ def mark_lead_contacted(user_id):
         if lead["id"] == user_id:
             lead["status"] = "contacted"
     _save_leads(leads)
+
+
+def reset_session(user_id):
+    """إعادة تعيين session العميل للبداية"""
+    if user_id in _sessions:
+        _sessions[user_id] = {
+            "stage": "start",
+            "data": {},
+            "created_at": _sessions[user_id].get("created_at", ""),
+            "last_updated": datetime.now().isoformat(),
+            "channel": "unknown",
+        }
